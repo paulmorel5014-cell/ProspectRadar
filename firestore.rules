@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users/{userId}/prospects
+    // Document ID: prospectId (usually Google Place ID)
+    // Fields:
+    //   - id: string (required) - Unique identifier
+    //   - name: string (required) - Business name
+    //   - address: string - Physical address
+    //   - phone: string - Contact phone number
+    //   - email: string (optional, email format) - Contact email
+    //   - website: string - Website URL
+    //   - category: string - Business category
+    //   - city: string - Business city
+    //   - status: string (enum) - Pipeline status
+    //   - opportunity_score: number - AI priority score
+    //   - audit_json: string - Full audit data
+    //   - created_at: string (ISO date) - Creation timestamp
+    //   - follow_up_date: string - Next follow-up
+    //   - tags: list (strings) - Custom tags
+    //   - uid: string (required) - Owner's UID
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "paulmorel5014@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidStatus(status) {
+      return status in ["À contacter", "En cours", "Gagné", "Perdu", "Nouveau"];
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidProspect(data) {
+      return hasRequiredFields(['id', 'name', 'uid']) &&
+             hasOnlyAllowedFields(['id', 'name', 'address', 'phone', 'email', 'website', 'category', 'city', 'status', 'opportunity_score', 'audit_json', 'created_at', 'follow_up_date', 'tags', 'uid']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.uid == request.auth.uid &&
+             (!('email' in data) || isValidEmail(data.email)) &&
+             (!('status' in data) || isValidStatus(data.status)) &&
+             (!('opportunity_score' in data) || data.opportunity_score is number) &&
+             (!('tags' in data) || data.tags is list);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /users/{userId}/prospects/{prospectId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidProspect(request.resource.data);
+      allow update: if isOwner(userId) && isValidProspect(request.resource.data);
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    match /public_previews/{previewId} {
+      allow read: if true; // Publicly accessible
+      allow create: if isAuthenticated(); // Any logged-in user can create a preview
+      allow update: if false; // Previews are immutable for now
+      allow delete: if isAdmin();
+    }
+  }
+}

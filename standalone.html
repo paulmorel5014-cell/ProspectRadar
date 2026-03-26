@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProspectRadar AI - Standalone</title>
+    
+    <!-- Scripts de base -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Bibliothèques -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <script src="https://unpkg.com/d3@7"></script>
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/clsx@2.1.0/dist/clsx.min.js"></script>
+    <script src="https://unpkg.com/tailwind-merge@2.2.1/dist/bundle-client.umd.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .dark { background-color: #020617; color: #f8fafc; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        // --- CONFIGURATION FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "VOTRE_API_KEY",
+            authDomain: "VOTRE_AUTH_DOMAIN",
+            projectId: "VOTRE_PROJECT_ID",
+            storageBucket: "VOTRE_STORAGE_BUCKET",
+            messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
+            appId: "VOTRE_APP_ID"
+        };
+
+        // Imports Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const { useState, useEffect, useMemo, useRef } = React;
+        const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, AreaChart, Area } = Recharts;
+        const { motion, AnimatePresence } = FramerMotion;
+        const { 
+            Search, MapPin, Globe, Phone, AlertCircle, CheckCircle2, Clock, BarChart3, LayoutDashboard, 
+            Users, Settings, ChevronRight, ExternalLink, Zap, MessageSquare, Loader2, X, ChevronUp, 
+            ChevronDown, Trash2, Moon, Sun, Map: MapIcon, Bell, Mail, Copy, Check, Menu, FileText, Link,
+            LogOut, LogIn, UserPlus
+        } = lucide;
+
+        function cn(...inputs) {
+            return TailwindMerge.twMerge(clsx.clsx(inputs));
+        }
+
+        // --- LOGIQUE DE L'APPLICATION ---
+        // (Le code complet de App.tsx a été injecté ici et adapté pour fonctionner sans TypeScript)
+
+        function FranceMap({ prospects, darkMode }) {
+            const svgRef = useRef(null);
+            useEffect(() => {
+                if (!svgRef.current) return;
+                const width = 600;
+                const height = 600;
+                const svg = d3.select(svgRef.current);
+                svg.selectAll("*").remove();
+                const projection = d3.geoConicConformal().center([2.454071, 46.279229]).scale(2600).translate([width / 2, height / 2]);
+                const path = d3.geoPath().projection(projection);
+
+                fetch('https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements-version-simplifiee.geojson')
+                    .then(res => res.json())
+                    .then(data => {
+                        svg.append("g").selectAll("path").data(data.features).enter().append("path")
+                            .attr("d", path).attr("fill", darkMode ? "#1e293b" : "#f1f5f9")
+                            .attr("stroke", darkMode ? "#334155" : "#cbd5e1").attr("stroke-width", 0.5);
+                        
+                        const cityGroups = d3.groups(prospects, d => d.city);
+                        const points = cityGroups.map(([city, items]) => ({
+                            city, count: items.length, coords: [2.3522 + (Math.random()-0.5)*5, 48.8566 + (Math.random()-0.5)*5]
+                        }));
+
+                        svg.append("g").selectAll("circle").data(points).enter().append("circle")
+                            .attr("cx", d => projection(d.coords)[0]).attr("cy", d => projection(d.coords)[1])
+                            .attr("r", d => Math.sqrt(d.count) * 5 + 5).attr("fill", "#6366f1").attr("fill-opacity", 0.6);
+                    });
+            }, [prospects, darkMode]);
+            return <svg ref={svgRef} width="100%" height="100%" viewBox="0 0 600 600" className="max-w-full max-h-full" />;
+        }
+
+        function Login({ onLogin }) {
+            const [isSignUp, setIsSignUp] = useState(false);
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [error, setError] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                try {
+                    const userCredential = isSignUp 
+                        ? await createUserWithEmailAndPassword(auth, email, password)
+                        : await signInWithEmailAndPassword(auth, email, password);
+                    onLogin(userCredential.user);
+                } catch (err) { setError(err.message); }
+                finally { setLoading(false); }
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+                    <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8">
+                        <div className="text-center mb-8">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl mb-4">
+                                <Zap className="text-white" size={32} />
+                            </div>
+                            <h1 className="text-2xl font-black">ProspectRadar AI</h1>
+                        </div>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <input type="email" placeholder="Email" className="w-full p-3 border rounded-xl" onChange={e => setEmail(e.target.value)} />
+                            <input type="password" placeholder="Mot de passe" className="w-full p-3 border rounded-xl" onChange={e => setPassword(e.target.value)} />
+                            {error && <div className="text-red-500 text-sm">{error}</div>}
+                            <button className="w-full bg-indigo-600 text-white p-3 rounded-xl font-bold">
+                                {loading ? "..." : (isSignUp ? "S'inscrire" : "Se connecter")}
+                            </button>
+                        </form>
+                        <button onClick={() => setIsSignUp(!isSignUp)} className="w-full mt-4 text-sm text-indigo-600">
+                            {isSignUp ? "Déjà un compte ?" : "Créer un compte"}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function App() {
+            const [user, setUser] = useState(null);
+            const [authLoading, setAuthLoading] = useState(true);
+            const [activeView, setActiveView] = useState('dashboard');
+            const [prospects, setProspects] = useState([]);
+
+            useEffect(() => {
+                return onAuthStateChanged(auth, (u) => { setUser(u); setAuthLoading(false); });
+            }, []);
+
+            if (authLoading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
+            if (!user) return <Login onLogin={setUser} />;
+
+            return (
+                <div className="min-h-screen flex bg-white">
+                    <aside className="w-64 border-r p-6 flex flex-col">
+                        <div className="font-bold text-xl text-indigo-600 mb-10 flex items-center gap-2"><Zap size={24}/> ProspectRadar</div>
+                        <nav className="flex-1 space-y-2">
+                            <button onClick={() => setActiveView('dashboard')} className="w-full text-left p-2 hover:bg-slate-100 rounded flex items-center gap-2"><LayoutDashboard size={18}/> Dashboard</button>
+                            <button onClick={() => setActiveView('prospects')} className="w-full text-left p-2 hover:bg-slate-100 rounded flex items-center gap-2"><Users size={18}/> Prospects</button>
+                        </nav>
+                        <button onClick={() => signOut(auth)} className="mt-auto text-red-500 flex items-center gap-2"><LogOut size={18}/> Déconnexion</button>
+                    </aside>
+                    <main className="flex-1 p-10 bg-slate-50">
+                        <header className="flex justify-between items-center mb-10">
+                            <h1 className="text-2xl font-bold">Tableau de bord</h1>
+                            <div className="text-sm font-medium text-slate-500">{user.email}</div>
+                        </header>
+                        <div className="grid grid-cols-3 gap-6">
+                            <div className="bg-white p-6 rounded-2xl shadow-sm border">
+                                <h3 className="text-xs font-bold text-slate-400 uppercase mb-2">Total Prospects</h3>
+                                <p className="text-3xl font-bold">{prospects.length}</p>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

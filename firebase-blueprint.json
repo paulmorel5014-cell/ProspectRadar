@@ -1,0 +1,53 @@
+{
+  "entities": {
+    "Prospect": {
+      "title": "Prospect",
+      "description": "A business lead analyzed by the system",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier (usually Google Place ID)" },
+        "name": { "type": "string", "description": "Business name" },
+        "address": { "type": "string", "description": "Physical address" },
+        "phone": { "type": "string", "description": "Contact phone number" },
+        "email": { "type": "string", "format": "email", "description": "Contact email address" },
+        "website": { "type": "string", "description": "Website URL" },
+        "category": { "type": "string", "description": "Business category" },
+        "city": { "type": "string", "description": "Business city" },
+        "status": { 
+          "type": "string", 
+          "enum": ["À contacter", "En cours", "Gagné", "Perdu", "Nouveau"],
+          "description": "Current status in the sales pipeline" 
+        },
+        "opportunity_score": { "type": "integer", "description": "AI-calculated priority score (0-100)" },
+        "audit_json": { "type": "string", "description": "Full audit data stored as a JSON string" },
+        "created_at": { "type": "string", "format": "date-time", "description": "Timestamp of creation" },
+        "follow_up_date": { "type": "string", "description": "Date for next follow-up" },
+        "tags": { "type": "array", "items": { "type": "string" }, "description": "Custom user-defined tags" },
+        "uid": { "type": "string", "description": "Owner's Firebase Auth UID" }
+      },
+      "required": ["id", "name", "uid"]
+    },
+    "PublicPreview": {
+      "title": "PublicPreview",
+      "description": "A public mockup preview for a prospect",
+      "type": "object",
+      "properties": {
+        "prospectId": { "type": "string" },
+        "name": { "type": "string" },
+        "mockup_html": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["prospectId", "name", "mockup_html"]
+    }
+  },
+  "firestore": {
+    "users/{userId}/prospects/{prospectId}": {
+      "schema": "Prospect",
+      "description": "User-specific collection of prospects"
+    },
+    "public_previews/{previewId}": {
+      "schema": "PublicPreview",
+      "description": "Publicly accessible mockups"
+    }
+  }
+}

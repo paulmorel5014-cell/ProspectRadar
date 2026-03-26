@@ -1,0 +1,5 @@
+{
+  "name": "ProspectRadar IA",
+  "description": "Application de prospection B2B pour identifier les commerces avec une faible présence numérique et générer des audits par IA.",
+  "requestFramePermissions": ["geolocation"]
+}
