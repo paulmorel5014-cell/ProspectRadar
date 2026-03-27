@@ -56,6 +56,7 @@ export default function App() {
   const [auditingId, setAuditingId] = useState<string | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
   const [hasGeminiKey, setHasGeminiKey] = useState(false);
+  const [customGeminiKey, setCustomGeminiKey] = useState(() => localStorage.getItem('customGeminiKey') || '');
 
   const selectedProspect = useMemo(() => 
     prospects.find(p => p.id === selectedProspectId) || null, 
@@ -68,11 +69,12 @@ export default function App() {
         const hasKey = await window.aistudio.hasSelectedApiKey();
         setHasGeminiKey(hasKey);
       } else {
-        setHasGeminiKey(!!process.env.GEMINI_API_KEY || !!process.env.API_KEY);
+        const envKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+        setHasGeminiKey(!!envKey || !!customGeminiKey);
       }
     };
     checkKey();
-  }, []);
+  }, [customGeminiKey]);
 
   // Filters & Sorting
   const [searchTerm, setSearchTerm] = useState(() => localStorage.getItem('searchTerm') || '');
@@ -274,6 +276,10 @@ export default function App() {
               <Settings 
                 darkMode={darkMode} setDarkMode={setDarkMode}
                 hasGeminiKey={hasGeminiKey} setHasGeminiKey={setHasGeminiKey}
+                customGeminiKey={customGeminiKey} setCustomGeminiKey={(key) => {
+                  setCustomGeminiKey(key);
+                  localStorage.setItem('customGeminiKey', key);
+                }}
               />
             )}
           </motion.div>

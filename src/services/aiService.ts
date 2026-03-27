@@ -79,7 +79,7 @@ export const handleAudit = async (
       }
     `;
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
+    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || localStorage.getItem('customGeminiKey') || "";
     if (!apiKey) {
       alert("Clé API Gemini manquante. Veuillez la configurer dans l'onglet Configuration.");
       setActiveView('settings');
@@ -156,7 +156,7 @@ export const findEmails = async (
   userUid: string,
   addNotification: (msg: string, type?: 'success' | 'info') => void
 ) => {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || localStorage.getItem('customGeminiKey') || "";
   if (!apiKey) return;
 
   const ai = new GoogleGenAI({ apiKey });

@@ -17,12 +17,17 @@ interface SettingsProps {
   setDarkMode: (dark: boolean) => void;
   hasGeminiKey: boolean;
   setHasGeminiKey: (has: boolean) => void;
+  customGeminiKey: string;
+  setCustomGeminiKey: (key: string) => void;
 }
 
 export const Settings: React.FC<SettingsProps> = ({
-  darkMode, setDarkMode, hasGeminiKey, setHasGeminiKey
+  darkMode, setDarkMode, hasGeminiKey, setHasGeminiKey,
+  customGeminiKey, setCustomGeminiKey
 }) => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [showKeyInput, setShowKeyInput] = useState(false);
+  const [tempKey, setTempKey] = useState(customGeminiKey);
 
   useEffect(() => {
     if ("Notification" in window) {
@@ -129,16 +134,72 @@ export const Settings: React.FC<SettingsProps> = ({
                   Utilisé pour l'audit automatique, la génération de maquettes et les emails de prospection.
                 </p>
                 {!hasGeminiKey && (
+                  <div className="space-y-3">
+                    {window.aistudio?.openSelectKey ? (
+                      <button 
+                        onClick={async () => {
+                          if (window.aistudio?.openSelectKey) {
+                            await window.aistudio.openSelectKey();
+                            setHasGeminiKey(true);
+                          }
+                        }}
+                        className="w-full py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-all"
+                      >
+                        Configurer la clé
+                      </button>
+                    ) : (
+                      <div className="space-y-3">
+                        {!showKeyInput ? (
+                          <button 
+                            onClick={() => setShowKeyInput(true)}
+                            className="w-full py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-all"
+                          >
+                            Entrer une clé API
+                          </button>
+                        ) : (
+                          <div className="space-y-2">
+                            <input 
+                              type="password"
+                              placeholder="Clé API Gemini"
+                              value={tempKey}
+                              onChange={(e) => setTempKey(e.target.value)}
+                              className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500/20"
+                            />
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => {
+                                  setCustomGeminiKey(tempKey);
+                                  setShowKeyInput(false);
+                                }}
+                                className="flex-1 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-bold hover:bg-indigo-700 transition-all"
+                              >
+                                Sauvegarder
+                              </button>
+                              <button 
+                                onClick={() => setShowKeyInput(false)}
+                                className="px-3 py-2 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-[10px] font-bold hover:bg-slate-300 dark:hover:bg-slate-600 transition-all"
+                              >
+                                Annuler
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold leading-tight">
+                          Clé API manquante. Obtenez-en une sur <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="underline">AI Studio</a>.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {hasGeminiKey && !window.aistudio?.openSelectKey && customGeminiKey && (
                   <button 
-                    onClick={async () => {
-                      if (window.aistudio?.openSelectKey) {
-                        await window.aistudio.openSelectKey();
-                        setHasGeminiKey(true);
-                      }
+                    onClick={() => {
+                      setCustomGeminiKey('');
+                      setTempKey('');
                     }}
-                    className="w-full py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-all"
+                    className="w-full py-2 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-[10px] font-bold hover:bg-slate-300 dark:hover:bg-slate-600 transition-all"
                   >
-                    Configurer la clé
+                    Supprimer la clé
                   </button>
                 )}
               </div>
