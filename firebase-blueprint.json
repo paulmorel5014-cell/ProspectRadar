@@ -23,7 +23,23 @@
         "created_at": { "type": "string", "format": "date-time", "description": "Timestamp of creation" },
         "follow_up_date": { "type": "string", "description": "Date for next follow-up" },
         "tags": { "type": "array", "items": { "type": "string" }, "description": "Custom user-defined tags" },
-        "uid": { "type": "string", "description": "Owner's Firebase Auth UID" }
+        "uid": { "type": "string", "description": "Owner's Firebase Auth UID" },
+        "lat": { "type": "number", "description": "Latitude for real geocoding" },
+        "lng": { "type": "number", "description": "Longitude for real geocoding" },
+        "notes": { "type": "string", "description": "General notes about the prospect" },
+        "activity_log": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "type": { "type": "string", "enum": ["call", "email", "meeting", "note", "status_change"] },
+              "content": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" }
+            }
+          },
+          "description": "Log of activities with the prospect"
+        }
       },
       "required": ["id", "name", "uid"]
     },

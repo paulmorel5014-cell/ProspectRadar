@@ -14,6 +14,17 @@ export interface Prospect {
   follow_up_date?: string;
   tags?: string[];
   uid: string;
+  lat?: number;
+  lng?: number;
+  notes?: string;
+  activity_log?: ActivityLogEntry[];
+}
+
+export interface ActivityLogEntry {
+  id: string;
+  type: 'call' | 'email' | 'meeting' | 'note' | 'status_change';
+  content: string;
+  timestamp: string;
 }
 
 export interface AuditData {

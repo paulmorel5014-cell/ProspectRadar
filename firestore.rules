@@ -67,14 +67,17 @@ service cloud.firestore {
 
     function isValidProspect(data) {
       return hasRequiredFields(['id', 'name', 'uid']) &&
-             hasOnlyAllowedFields(['id', 'name', 'address', 'phone', 'email', 'website', 'category', 'city', 'status', 'opportunity_score', 'audit_json', 'created_at', 'follow_up_date', 'tags', 'uid']) &&
+             hasOnlyAllowedFields(['id', 'name', 'address', 'phone', 'email', 'website', 'category', 'city', 'status', 'opportunity_score', 'audit_json', 'created_at', 'follow_up_date', 'tags', 'uid', 'lat', 'lng', 'notes', 'activity_log']) &&
              data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
              data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
-             data.uid == request.auth.uid &&
              (!('email' in data) || isValidEmail(data.email)) &&
              (!('status' in data) || isValidStatus(data.status)) &&
              (!('opportunity_score' in data) || data.opportunity_score is number) &&
-             (!('tags' in data) || data.tags is list);
+             (!('tags' in data) || data.tags is list) &&
+             (!('lat' in data) || data.lat is number) &&
+             (!('lng' in data) || data.lng is number) &&
+             (!('notes' in data) || data.notes is string) &&
+             (!('activity_log' in data) || data.activity_log is list);
     }
 
     // ===============================================================
@@ -83,7 +86,9 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow write: if isAdmin();
+      allow create: if isOwner(userId) && (!('role' in request.resource.data) || request.resource.data.role == 'user');
+      allow update: if isOwner(userId) && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role);
+      allow delete: if isAdmin();
     }
 
     match /users/{userId}/prospects/{prospectId} {

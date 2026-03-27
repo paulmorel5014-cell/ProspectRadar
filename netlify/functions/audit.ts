@@ -30,6 +30,14 @@ export const handler: Handler = async (event, context) => {
       })
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        statusCode: response.status,
+        body: JSON.stringify({ error: `Erreur Gemini (${response.status}): ${errorText.substring(0, 100)}` }),
+      };
+    }
+
     const data = await response.json();
     
     if (data.error) {

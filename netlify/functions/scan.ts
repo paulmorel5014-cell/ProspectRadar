@@ -39,6 +39,14 @@ export const handler: Handler = async (event, context) => {
       })
     });
 
+    if (!searchResponse.ok) {
+      const errorText = await searchResponse.text();
+      return {
+        statusCode: searchResponse.status,
+        body: JSON.stringify({ error: `Erreur Google Maps (${searchResponse.status}): ${errorText.substring(0, 100)}` }),
+      };
+    }
+
     const searchData = await searchResponse.json();
 
     if (searchData.error) {

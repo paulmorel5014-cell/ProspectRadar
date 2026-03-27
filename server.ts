@@ -38,7 +38,7 @@ async function startServer() {
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': apiKey,
-          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.websiteUri,places.nationalPhoneNumber'
+          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.websiteUri,places.nationalPhoneNumber,places.location'
         },
         body: JSON.stringify({
           textQuery: textQuery
@@ -74,14 +74,14 @@ async function startServer() {
 
       const results = searchData.places.map((place: any) => {
         const website = place.websiteUri || "";
-        let digitalScore = 0;
+        let opportunityScore = 0;
 
         if (!website) {
-          digitalScore = 10;
+          opportunityScore = 10; // High priority (no site = bad health)
         } else if (website.startsWith("http://")) {
-          digitalScore = 40;
+          opportunityScore = 40; // Medium priority (unsecure)
         } else {
-          digitalScore = 70;
+          opportunityScore = 70; // Low priority (secure site)
         }
 
         return {
@@ -93,8 +93,10 @@ async function startServer() {
           category: category,
           city: city,
           status: 'Nouveau',
-          opportunity_score: digitalScore,
+          opportunity_score: opportunityScore,
           tags: [],
+          lat: place.location?.latitude,
+          lng: place.location?.longitude,
           audit_json: JSON.stringify({
             has_website: !!website,
             is_secure: website.startsWith("https://"),
