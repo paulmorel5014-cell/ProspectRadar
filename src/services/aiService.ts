@@ -79,7 +79,18 @@ export const handleAudit = async (
       }
     `;
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || localStorage.getItem('customGeminiKey') || "";
+    const getApiKey = () => {
+      try {
+        // Try various sources safely
+        return localStorage.getItem('customGeminiKey') || 
+               (typeof process !== 'undefined' ? (process.env.GEMINI_API_KEY || process.env.API_KEY) : '') || 
+               "";
+      } catch (e) {
+        return "";
+      }
+    };
+
+    const apiKey = getApiKey();
     if (!apiKey) {
       alert("Clé API Gemini manquante. Veuillez la configurer dans l'onglet Configuration.");
       setActiveView('settings');
@@ -88,7 +99,7 @@ export const handleAudit = async (
     const ai = new GoogleGenAI({ apiKey });
     
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -144,7 +155,7 @@ export const handleAudit = async (
       alert("Clé API Gemini invalide. Veuillez la reconfigurer dans l'onglet Configuration.");
       setActiveView('settings');
     } else {
-      alert("L'audit IA a échoué. Vérifiez votre connexion ou votre clé API.");
+      alert(`L'audit IA a échoué : ${err.message || "Vérifiez votre connexion ou votre clé API."}`);
     }
   } finally {
     setAuditingId(null);
@@ -156,7 +167,17 @@ export const findEmails = async (
   userUid: string,
   addNotification: (msg: string, type?: 'success' | 'info') => void
 ) => {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || localStorage.getItem('customGeminiKey') || "";
+  const getApiKey = () => {
+    try {
+      return localStorage.getItem('customGeminiKey') || 
+             (typeof process !== 'undefined' ? (process.env.GEMINI_API_KEY || process.env.API_KEY) : '') || 
+             "";
+    } catch (e) {
+      return "";
+    }
+  };
+
+  const apiKey = getApiKey();
   if (!apiKey) return;
 
   const ai = new GoogleGenAI({ apiKey });
@@ -167,7 +188,7 @@ export const findEmails = async (
     Utilise tes outils de recherche si nécessaire.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }]
